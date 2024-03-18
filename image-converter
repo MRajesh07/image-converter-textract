@@ -1,0 +1,46 @@
+
+import logging
+import boto3
+
+
+class ImageConverter:
+    def __init__(self, region):
+        # Set up logging
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.INFO)
+        # Get the boto3 client.
+        self.textract_client = boto3.client('textract', region_name=region)
+        self.logger.info('textract client created'+region)
+    def converter(self, image):
+        # Analyze the document.
+        self.logger.info('conversion started')
+        response = self.textract_client.detect_document_text(Document=image)
+        self.logger.info('conversion ended')
+        return response
+    def extract_data_from_blocks(self, blocks):
+        # Extract relevant data from Textract blocks
+        # Modify this function based on your specific use case
+        extracted_data = []
+        for block in blocks:
+            if block['BlockType'] == 'LINE':
+                line_text = block['Text']
+                # Add additional logic to extract data from the LINE block
+                extracted_data.append([line_text])
+        return extracted_data
+    def textract_to_csv(self, image, response, filename):
+        # Process Textract blocks
+        blocks = response['Blocks']
+        
+        csv_buffer = StringIO()
+        csv_writer = csv.writer(csv_buffer)
+
+        # Write header if needed
+        # csv_writer.writerow(['Header1', 'Header2', 'Header3'])
+        extracted_data = extracted_data(blocks)
+        # Write data rows
+        csv_writer.writerows(extracted_data)
+
+        # Upload CSV to S3
+        s3 = boto3.client('s3')
+        s3.put_object(Bucket=bucket_name, Key=csv_key, Body=csv_buffer.getvalue())
+        
