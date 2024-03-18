@@ -1,0 +1,35 @@
+import boto3
+import logging
+import time 
+
+class PdfConverter:
+    def __init__(self, region):
+        # Set up logging.
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.INFO)
+        # Get the boto3 client.
+        self.textract_client = boto3.client('textract', region_name=region)
+        self.logger.info('textract client created for pdf converter')
+    def extractTextFromPdf(self,image):
+        self.logger.info('extract text from pdf started')
+        response = self.textract_client.start_document_text_detection(
+            DocumentLocation=image
+        )
+        self.logger.info('textract detcted the document')
+        # Get the JobId
+        job_id = response['JobId']
+        # Wait for the Textract job to complete
+        # self.textract_client.get_waiter('text-detection-complete').wait(JobId=job_id,)
+        while True:
+            # Get the status of the job
+            response = self.textract_client.get_document_text_detection(JobId=job_id)
+            status = response['JobStatus']
+            if status in ['SUCCEEDED', 'FAILED']:
+                # Job is in a terminal state, break out of the loop
+                break
+            # If the job is still in progress, wait for some time before checking again
+            time.sleep(5)
+        # Get the Textract results
+        result = self.textract_client.get_document_text_detection(JobId=job_id)
+        self.logger.info('extract text from pdf ended')
+        return result
