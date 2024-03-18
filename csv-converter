@@ -1,0 +1,63 @@
+import boto3
+import json
+import logging
+
+class CsvConverter:
+    def __init__(self,blocks,bucket_name,csv_file_key):
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.INFO)
+        self.logger.info('CsvConverter started ')
+        self.logger.info(f'bucketname {bucket_name}')
+        self.logger.info(f'outputfilename {csv_file_key}')
+        self.s3_client = boto3.client('s3')
+        # self.logger.info = logging.getLogger(__name__)
+          # Set the S3 bucket name and CSV file key
+        self.bucket_name = bucket_name
+        self.csv_file_key = csv_file_key  # Replace with your desired output file name
+        self.pdf_blocks = blocks 
+        self.logger.info('CsvConverter ended ')
+    def convert_blocks_to_csv(self,blocks):
+        self.logger.info('converter for blocks to csv entered')
+        # Implement your custom logic to convert blocks to CSV rows
+        # This is a placeholder, replace it with your actual conversion logic
+        
+        csv_rows = [json.dumps(block).split(',') for block in blocks]
+       
+        self.logger.info('converter for blocks to csv ended')
+        return csv_rows
+        # ['BlockType']
+    
+    def upload_to_s3(self,bucket_name, csv_file_key, content):
+        self.logger.info('upload s3 method entered')
+       
+        response=self.s3_client.put_object(Body=content ,Bucket=bucket_name, Key=csv_file_key)
+        self.logger.info('put object finished')
+        status_code=response['ResponseMetadata']['HTTPStatusCode']
+        # Check the HTTP status code in the response
+        if status_code == 200:
+            self.logger.info("Upload successful!")
+        else:
+            self.logger.info("Upload failed. HTTP status code:", status_code)
+        self.logger.info('upload s3 method ended')
+        return status_code
+    
+    def csv_handler(self):
+        # Extract the PDF blocks from the Lambda event
+         # Replace with the key you use in the event
+        self.logger.info('csv handler strated')
+        # Convert blocks to CSV rows
+        csv_rows = self.convert_blocks_to_csv(self.pdf_blocks)
+        
+     
+        # Write CSV rows to a string
+        csv_content = '\n'.join([','.join(row) for row in csv_rows])
+        
+        # csv_content = [[block.get('Text', '')] for block in blocks]
+       
+        # Upload CSV to S3
+        
+        status_code=self.upload_to_s3(self.bucket_name, self.csv_file_key, csv_content)
+        self.logger.info('csv handler ended')
+        return status_code
+        
+        
